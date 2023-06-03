@@ -98,9 +98,10 @@ export interface ConversationCreatedSubscriptionPayload {
 }
 
 export interface ConversationUpdatedSubscriptionPayload {
-  conversationUpdated: {
-    conversation: ConversationPopulated;
-  };
+  conversationUpdated: ConversationPopulated;
+}
+export interface ConversationDeletedSubscriptionPayload {
+  conversationDeleted: ConversationPopulated;
 }
 
 /**

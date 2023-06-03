@@ -1,6 +1,7 @@
 import { Prisma, User } from '@prisma/client';
 import {
   ConversationCreatedSubscriptionPayload,
+  ConversationDeletedSubscriptionPayload,
   ConversationPopulated,
   ConversationUpdatedSubscriptionPayload,
   GraphQLContext,
@@ -16,11 +17,9 @@ const resolvers = {
       _parent: any,
       _args: any,
       context: GraphQLContext
-    ) => {
-      // : Promise<Array<ConversationPopulated>>
-      // console.log('in convo');
-      const { prisma, res } = context;
-      const { code, payload } = res?.locals.tokenPayload;
+    ): Promise<Array<ConversationPopulated>> => {
+      const { prisma, tokenPayload } = context;
+      const { code, payload } = tokenPayload;
       if (code !== 200) {
         throw new GraphQLError(
           'You are not authorized to perform this action.',
@@ -31,9 +30,9 @@ const resolvers = {
           }
         );
       }
-
       try {
-        const { userId } = payload;
+        const userId = payload?.userId;
+
         const conversations = await prisma.conversation.findMany({
           where: {
             participants: {
@@ -149,6 +148,75 @@ const resolvers = {
         );
       }
     },
+    deleteConversation: async (
+      _parent: any,
+      args: { conversationId: string },
+      context: GraphQLContext
+    ): Promise<boolean> => {
+      const { prisma, pubSub, tokenPayload } = context;
+      const { conversationId } = args;
+      const { code, payload } = tokenPayload;
+      if (code !== 200) {
+        throw new GraphQLError(
+          'You are not authorized to perform this action.',
+          {
+            extensions: {
+              code: code,
+            },
+          }
+        );
+      }
+      try {
+        //delete conversation and all its entities with prisma transaction
+        // const [deletedConversation] = await prisma.$transaction([
+        //   prisma.conversation.delete({
+        //     where: {
+        //       id: conversationId,
+        //     },
+        //     include: conversationPopulated,
+        //   }),
+        //   prisma.conversationParticipant.deleteMany({
+        //     where: {
+        //       conversationId,
+        //     },
+        //   }),
+        //   prisma.message.deleteMany({
+        //     where: {
+        //       conversationId,
+        //     },
+        //   }),
+        // ]);
+        await prisma.conversationParticipant.deleteMany({
+          where: {
+            conversationId,
+          },
+        });
+        console.log('conversationParticipant deleted');
+
+        const deletedConversation = await prisma.conversation.delete({
+          where: {
+            id: conversationId,
+          },
+          include: conversationPopulated,
+        });
+        console.log('Conversation deleted');
+
+        await prisma.message.deleteMany({
+          where: {
+            conversationId,
+          },
+        });
+        console.log('message deleted');
+
+        pubSub.publish('CONVERSATION_DELETE', {
+          conversationDeleted: deletedConversation,
+        });
+      } catch (error) {
+        console.log('delete conversation failed:', error);
+        throw new GraphQLError('delete conversation failed');
+      }
+      return true;
+    },
   },
   Subscription: {
     conversationCreated: {
@@ -200,8 +268,34 @@ const resolvers = {
           const userId = tokenPayload.payload!.userId;
 
           const {
-            //@ts-ignore
             conversationUpdated: { participants },
+          } = payload;
+
+          return userIsConversationParticipant(participants, userId);
+        }
+      ),
+    },
+    conversationDeleted: {
+      subscribe: withFilter(
+        (_: any, __: any, context: GraphQLContext) => {
+          const { pubSub } = context;
+          return pubSub.asyncIterator(['CONVERSATION_DELETE']);
+        },
+        (
+          payload: ConversationDeletedSubscriptionPayload,
+          _variables: any,
+          context: GraphQLContext
+        ) => {
+          const { tokenPayload } = context;
+
+          if (tokenPayload.code !== 200) {
+            throw new GraphQLError('Not authorized: ' + tokenPayload.status);
+          }
+
+          const userId = tokenPayload.payload!.userId;
+
+          const {
+            conversationDeleted: { participants },
           } = payload;
 
           return userIsConversationParticipant(participants, userId);

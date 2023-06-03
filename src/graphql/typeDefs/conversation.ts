@@ -3,14 +3,32 @@ import gql from 'graphql-tag';
 const typeDefs = gql`
   scalar Date
 
+  type Query {
+    conversations: [Conversation]
+  }
+
   type Mutation {
     createConversation(participantIds: [String]!): createConversationResponse
   }
   type Mutation {
     markConversationAsRead(userId: String!, conversationId: String!): Boolean
   }
-  type Query {
-    conversations: [Conversation]
+  type Mutation {
+    deleteConversation(conversationId: String!): Boolean
+  }
+
+  type Subscription {
+    conversationCreated: Conversation
+  }
+  type Subscription {
+    conversationUpdated: Conversation
+  }
+  type Subscription {
+    conversationDeleted: ConversationDeletedSubscriptionPayload
+  }
+
+  type ConversationDeletedSubscriptionPayload {
+    id: String
   }
 
   type Conversation {
@@ -21,10 +39,6 @@ const typeDefs = gql`
     updatedAt: Date
   }
 
-  # type ConversationUpdatedSubscriptionPayload {
-  #   conversation: Conversation
-  # }
-
   type Participant {
     id: String
     user: User
@@ -32,13 +46,6 @@ const typeDefs = gql`
   }
   type createConversationResponse {
     conversationId: String
-  }
-
-  type Subscription {
-    conversationCreated: Conversation
-  }
-  type Subscription {
-    conversationUpdated: Conversation
   }
 `;
 
