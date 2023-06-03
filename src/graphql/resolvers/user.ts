@@ -141,7 +141,9 @@ const resolvers = {
       _args: any,
       context: GraphQLContext
     ): Promise<getCurrentUserResponse | null> => {
-      const { prisma, res } = context;
+      const { prisma, res, tokenPayload } = context;
+      console.log(tokenPayload);
+      
       const status = res?.locals.tokenPayload.code;
       const payload = res?.locals.tokenPayload.payload;
 
