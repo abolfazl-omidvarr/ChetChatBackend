@@ -5,8 +5,9 @@
   "main": "./dist/src/index",
   "types": "./dist/src/index",
   "scripts": {
+    "build": "prisma generate && tsc",
     "dev": "tsc --watch & nodemon dist/src",
-    "start": "tsc --watch & nodemon dist/src",
+    "start": "node dist/src",
     "prisma": "prisma generate"
   },
   "keywords": [],
