@@ -1,6 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client';
 import { PubSub } from 'graphql-subscriptions';
-import { ISODateString } from 'next-auth';
 import { Response, Request } from 'express';
 import {
   conversationPopulated,
