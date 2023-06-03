@@ -9,7 +9,6 @@ import {
 } from '../../util/types';
 import bcrypt from 'bcrypt';
 import { GraphQLError } from 'graphql';
-import { getServerSession } from 'next-auth';
 import { PubSub, withFilter } from 'graphql-subscriptions';
 import { userIsConversationParticipant } from '../../util/functions';
 import { conversationPopulated } from './conversation';
