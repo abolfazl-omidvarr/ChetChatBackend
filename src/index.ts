@@ -48,7 +48,7 @@ async function main() {
   const schema = makeExecutableSchema({ typeDefs, resolvers });
 
   const corsOption = {
-    origin: process.env.CLIENT_ORIGIN,
+    origin: 'http://localhost:3000',
     credentials: true,
   };
 
